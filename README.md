@@ -37,4 +37,4 @@
 ## 下载地址
 
 * **绿色免安装版下载**：您可以直接点击下方链接，下载编译好的独立 Windows 运行程序：
-  * [👉 下载 全景下载合成工具.exe (位于本仓库 dist 目录)](dist/%E5%85%A8%E6%99%AF%E4%B8%8B%E8%BD%BD%E5%90%88%E6%88%90%E5%B7%A5%E5%85%B7.exe)
+  * [👉 下载 全景下载合成工具.exe (位于本仓库 dist 目录)](https://github.com/Mjrooo/720yundownload/releases)
