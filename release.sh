@@ -33,18 +33,11 @@ if [ $? -ne 0 ]; then
 fi
 echo "✨ 本地打包成功，生成文件：dist/全景下载合成工具.exe"
 
-# 3. 检查 Git 远程关联
-REMOTE_URL=$(git remote get-url origin 2>/dev/null || true)
-if [ -z "$REMOTE_URL" ]; then
-    echo "⚠️ 检测到尚未关联 GitHub 远程仓库！"
-    read -p "请输入您的 GitHub 仓库链接 (例如 https://github.com/用户名/仓库.git): " REMOTE_URL
-    if [ -n "$REMOTE_URL" ]; then
-        git remote add origin "$REMOTE_URL"
-        echo "已成功关联远程仓库: $REMOTE_URL"
-    else
-        echo "❌ 未指定远程仓库，发布终止。"
-        exit 1
-    fi
+# 3. 自动关联 GitHub 远程仓库
+GITHUB_REMOTE_URL="git@github.com:Mjrooo/720yundownload.git"
+if ! git remote | grep -q "^github$"; then
+    echo "正在自动关联 GitHub 远程仓库: $GITHUB_REMOTE_URL"
+    git remote add github "$GITHUB_REMOTE_URL"
 fi
 
 # 4. 在 master 分支提交所有内容 (包含所有源码与开发配置的备份)
@@ -58,10 +51,13 @@ fi
 
 # 提示是否推送 master 分支（包含源码）到远程
 # 注意：如果您的 GitHub 仓库是公开的，请选 n（否），只把源码留在本地，只推送无源码的 main 分支！
-read -p "是否同步推送 master 源码开发分支到 GitHub 远程仓库？(y/n, 默认 n): " PUSH_MASTER
+read -p "是否同步推送 master 源码开发分支到所有 Git 远程仓库？(y/n, 默认 n): " PUSH_MASTER
 if [ "$PUSH_MASTER" = "y" ] || [ "$PUSH_MASTER" = "Y" ]; then
-    echo "正在推送 master 分支到 origin..."
-    git push origin master
+    REMOTES=$(git remote)
+    for R in $REMOTES; do
+        echo "正在推送 master 分支到远程仓库: $R ..."
+        git push "$R" master
+    done
 else
     echo "已跳过推送 master 远程源码分支，源码仅在本地进行 commit 留存。"
 fi
@@ -108,17 +104,27 @@ EOF
 # 清理临时目录
 rm -rf "$TEMP_DIR"
 
-# 在 main 分支上提交并强制推送到远程
+# 在 main 分支上提交并强制推送到所有关联的远程仓库
 git add .
 git commit -m "Release version $VERSION (Distribution files only)"
-git push -u origin main --force
+
+REMOTES=$(git remote)
+for R in $REMOTES; do
+    echo "正在推送 main 分支到远程仓库: $R ..."
+    git push "$R" main --force
+done
 
 # 清除已存在的本地和远程 Tag 冲突
 git tag -d "$VERSION" 2>/dev/null || true
-git push origin --delete "$VERSION" 2>/dev/null || true
+for R in $REMOTES; do
+    git push "$R" --delete "$VERSION" 2>/dev/null || true
+done
 
 git tag "$VERSION"
-git push origin "$VERSION"
+for R in $REMOTES; do
+    echo "正在推送 Tag [$VERSION] 到远程仓库: $R ..."
+    git push "$R" "$VERSION"
+done
 
 # 6. 检查 GitHub CLI (gh) 自动发布
 if ! command -v gh &> /dev/null; then
